@@ -362,6 +362,18 @@ Recall from Lab 1, that we used the Rapid Deployment Policy template to create o
 curl -k -H 'Host:' https://10.1.10.145/
 ```
 14. Review the **Alarmed request in Security > Event Logs > Application > Requests**.
+![image](https://user-images.githubusercontent.com/38420010/119367829-a5fdb400-bcb2-11eb-8b84-5c5a283e63cc.png)
+15. To review, you just took a learning suggestion and accepted it to enable a protocol compliancy check and then you disabled future learning suggestions for this event. Violations are now alarmed in the Event Logs.
+16. Go back to**Security > Application Security > Policy Building > Traffic Learning** You would now typically go through and enable all of the checks that the policy is recommending regarding http protocol compliance and evasion technique detection.
+`Remember that your policy is safely in transparent mode so accepting suggestions and enabling checks will only raise alarms and no blocking actions will occur. This is why it is very important to start off transparently until you fully understand the basics of managing a WAF policy.`
+
+### False Positive Remediation
+1. Open terminal and paste following. It sumilates PUT method by user, which can be used by users in various applications.
+```bash
+curl -X PUT -d hello=world -d foo=bar -k https://10.1.10.145
+```
+
+
 
 
 
