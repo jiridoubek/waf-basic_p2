@@ -106,10 +106,10 @@ In this first lab, we will start by enabling a Global IPI Policy; much like you 
 
 **This concludes the Layer 3 IPI policy lab section.**  
   
-** To recap, you have just configured a Global IP Intelligence policy and added a custom category.
+**To recap, you have just configured a Global IP Intelligence policy and added a custom category.
 This policy is inspecting Layer 3 only and is a best-practice first step to securing your Application traffic.**  
   
-**We will now configure a Layer 7 WAF policy to inspect the X-Forwarded-For HTTP Header. **
+**We will now configure a Layer 7 WAF policy to inspect the X-Forwarded-For HTTP Header.**
 
 
 
