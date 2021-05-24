@@ -59,3 +59,73 @@ In this first lab, we will start by enabling a Global IPI Policy; much like you 
 
   * **insecureApp1_vs** - Main Site - Status of green indicates a healthy backend pool of real servers
   * **security-testing-overlay-vs** - Will be used later to send spoofed traffic to the main site
+
+5. On the Main tab, click Security > Network Firewall > IP Intelligence > Policies.
+![image](https://user-images.githubusercontent.com/38420010/119349565-94121600-bc9e-11eb-9588-d95a3e714f33.png)
+
+6. Click on the **Create** button.
+7. For the name: **global_ipi**
+8. Under **IP Intelligence Policy Properties** For the Default Log Action choose **yes** to **Log Category Matches.**
+9. Browse to the inline Help tab at the top left of the GUI and examine the Default Log Action settings. Inline help is very useful when navigating the myriad of options available within any configuration screen.
+10. To the right of the screen, click **Add** under the categories section.
+11. Repeat this process and add the following additional categories: **phishing, scanners, spam_sources, & denial_of_service**. Outside of this lab, you would want to enable additional categories for protection.
+
+![image](https://user-images.githubusercontent.com/38420010/119351114-69c15800-bca0-11eb-9264-d5ebeeca6c1e.png)
+
+12. Commit the Changes to the System.
+13. Under **Global Policy Assignment > IP Intelligence Policy** click on the dropdown and select the **global_ipi** policy and click Update.
+
+### Setup Logging for Global IPI
+1. In the upper left of the GUI under the **Main** tab, navigate to **Security > Event Logs > Logging Profiles** and click on **global-network**
+2. Under the Network Firewall section configure the IP Intelligence publisher to use **local-db-publisher**
+3. Check **Log GEO Events**
+4. Click **Update**
+![image](https://user-images.githubusercontent.com/38420010/119351448-bf960000-bca0-11eb-8704-5fd25bfb1f29.png)
+
+### Test
+1. On the Linux Client, open a terminal and **cd** to **Agility2020wafTools**
+2. Run the following command to send some traffic to the site: **./ipi_tester**
+`The script should continue to run for the remainder of Lab 1 & 2. Do NOT stop the script.`
+3. Navigate to **Security > Event Logs > Network > Ip Intelligence** and review the entries. Notice the Geolocation Data as well as the Black List Class to the right of the log screen.
+
+![image](https://user-images.githubusercontent.com/38420010/119351937-5b277080-bca1-11eb-882e-bb0d893f125b.png)
+
+### Create Custom Category
+1. Navigate to: **Security > Network Firewall > IP Intelligence > Blacklist Categories** and click **Create**.
+2. Name: **my_bad_ips** with a match type of **Source**
+3. Click **Finished**
+4. Click the checkbox next to the name **my_bad_ips** and then at the bottom of the GUI, click **Add To Category**.
+![image](https://user-images.githubusercontent.com/38420010/119352108-8d38d280-bca1-11eb-8734-52f48cb89621.png)
+5. Enter the ip address: **134.119.218.243** or any of the other malicious IP’s showing up in the IP Intelligence logs, and set the seconds to **3600** (1 hour)
+6. Click **Insert Entry**
+7. Navigate to **Security > Network Firewall > IP Intelligence > Policies** and click **global_ipi**
+8. Under **Categories** click **Add** and select your new custom category **my_bad_ips** from the drop-down. Click **Done Editing** and **Commit Changes to System**.
+![image](https://user-images.githubusercontent.com/38420010/119352376-e6086b00-bca1-11eb-8c5a-8213f0ea3e55.png)
+9. Navigate back to **Security > Event Logs > Network > Ip Intelligence** and review the entries under the column **Black List Class**. You will see entries for your custom category **my_bad_ips**.
+![image](https://user-images.githubusercontent.com/38420010/119352409-f1f42d00-bca1-11eb-9885-2f5c43833c35.png)
+
+**This concludes the Layer 3 IPI policy lab section.**  
+  
+** To recap, you have just configured a Global IP Intelligence policy and added a custom category.
+This policy is inspecting Layer 3 only and is a best-practice first step to securing your Application traffic.**  
+  
+**We will now configure a Layer 7 WAF policy to inspect the X-Forwarded-For HTTP Header. **
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
