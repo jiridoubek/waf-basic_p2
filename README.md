@@ -367,18 +367,6 @@ curl -k -H 'Host:' https://10.1.10.145/
 16. Go back to**Security > Application Security > Policy Building > Traffic Learning** You would now typically go through and enable all of the checks that the policy is recommending regarding http protocol compliance and evasion technique detection.
 `Remember that your policy is safely in transparent mode so accepting suggestions and enabling checks will only raise alarms and no blocking actions will occur. This is why it is very important to start off transparently until you fully understand the basics of managing a WAF policy.`
 
-### False Positive Remediation
-1. Open terminal and paste following. It sumilates PUT method by user, which can be used by users in various applications.
-```bash
-curl -X PUT -d hello=world -d foo=bar -k https://10.1.10.145/illegalPut
-```
-2. In Advanced WAF navigate to **Security > Event Logs > Application > Requests** and look for the Sev3 alert for the request going to **/illegalPut**.
-![image](https://user-images.githubusercontent.com/38420010/119368688-9df24400-bcb3-11eb-8b38-278fc5c51de9.png)
-3. Click **Accept** to allow a new method of **Put** in our policy and navigate to **Security > Application Security > Headers > Methods** and you will see our newly added “Allowed Method” of **Put**.
-![image](https://user-images.githubusercontent.com/38420010/119368784-b82c2200-bcb3-11eb-899b-10131b0fcd98.png)
-4. Send the request again
-5. Review the request in **Security > Event Logs > Application > Requests**.
-
 
 ### Policy Building Process
 One thing you can do to greatly increase the integrity of the learning suggestions is, define trusted IP’s. You can also tell the system to Only learn from trusted IP’s which is a very wise thing to do if you are developing policy on an app that is exposed to untrusted or Internet traffic.
