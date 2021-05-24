@@ -111,6 +111,53 @@ This policy is inspecting Layer 3 only and is a best-practice first step to secu
   
 **We will now configure a Layer 7 WAF policy to inspect the X-Forwarded-For HTTP Header.**
 
+### Create your WAF Policy
+1. Navigate to **Security > Application Security > Security Policies** and click the Plus (+) button.
+2. Name the policy: **webgoat_waf**
+3. Select Policy Template: **Rapid Deployment Policy** (accept the popup)
+4. Select Virtual Server: **insecureApp1_vs**
+5. Logging Profiles: **Log all requests**
+6. Notice that the Enforcement Mode is already in **Transparent Mode** and Signature Staging is **Enabled**
+7. Click **Save**.
+![image](https://user-images.githubusercontent.com/38420010/119353162-d76e8380-bca2-11eb-90bb-0daf3cd54a9a.png)
+
+### Configure L7 IPI
+1. Navigate to **Security > Application Security > Policy Building > Learning and Blocking Settings** and expand the **IP Addresses and Geolocations** section.
+`These are the settings that govern what happens when a violation occurs such as Alarm and Block. We will cover these concepts later in the lab but for now the policy is still transparent so the blocking setting has no effect.`
+![image](https://user-images.githubusercontent.com/38420010/119355305-64b2d780-bca5-11eb-8102-9f4e614507e7.png)
+2. Navigate to **Security > Application Security > IP Addresses > IP Intelligence** and enable **IP Intelligence** by checking the box.
+3. Notice at the top left drop-down that you are working within the webgoat_waf policy context. Enable **Alarm** and **Block** for each category.
+![image](https://user-images.githubusercontent.com/38420010/119355409-84e29680-bca5-11eb-8572-5f8809e3ae8e.png)
+4. Click **Save** and **Apply Policy**. You will get an “Are you sure” popup that you can banish by clicking **Do not ask for this confirmation again**.
+5. Enable XFF inspection in the WAF policy by going to **Security > Application Security > Security Policies > Policies List** > and click on webgoat_waf policy.
+6. Finally, scroll down under **General Settings** and click **Enabled** under **Trust XFF Header**.
+7. Click **Save** and **Apply Policy**
+
+### Test XFF Inspection
+1. Open a new terminal or terminal tab on the Client (the ipi_tester script should still be running) and run the following command to insert a malicious IP into the XFF Header:
+
+```bash
+curl -H "X-Forwarded-For: 134.119.218.243" -k https://juiceshop.f5agility.com/xff-test
+```
+If that IP has rotated out of the malicious DB, you can try one of these alternates:
+* 80.191.169.66 - Spam Source
+* 85.185.152.146 - Spam Source
+* 220.169.127.172 - Scanner
+* 222.74.73.202 - Scanner
+* 62.149.29.36 - Spam Source
+* 82.200.247.241 - Phishing
+* 134.119.219.93 - Spam Source
+* 218.17.228.102 - Spam Source
+* 220.169.127.172 - Scanner
+
+
+
+
+
+
+
+
+
 
 
 
