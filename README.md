@@ -32,6 +32,9 @@ The network topology implemented for this lab is very simple. The following comp
 1 x Ubuntu Linux 20.04 server.  
 
 # Module 1: IP Intelligence
+Expected time to complete: 30 minutes
+
+
 ## Exercise 1.1: IP Intelligence Policies
 ### Objective
 
@@ -179,7 +182,9 @@ Another practical control to implement early on in your WAF deployment is Geoloc
 Congratulations! You have just completed Lab 1 by implementing an IPI policy globally at Layer 3 and at Layer 7 via WAF policy for a specific application. Next you added Geolocation Enforcement to the policy and learned that this can be done via WAF policy or LTM policy. This follows our best-practice guidance for getting started with Application Security.**
 
 # Module 2: Bot Defense
-## Exercise 2.1: Bot Defense with Signatures¶
+Expected time to complete: 20 minutes
+
+## Exercise 2.1: Bot Defense with Signatures
 
 The next logical step in our configuration is to deal with automated traffic. While Advanced WAF has some deep Bot Defense capabilities, we will start with Bot Signatures. A good goal during your initial deployment would be to get transparent BOT profiles deployed across your various application Virtual Servers so you can start to analyze your “normal” loads of automated traffic. This can be very surprising to an organization or a developer that thought they had a lot more “real users”.
 
@@ -235,6 +240,7 @@ The next logical step in our configuration is to deal with automated traffic. Wh
 ![image](https://user-images.githubusercontent.com/38420010/119359260-ba897e80-bca9-11eb-9779-90a60e904923.png)
 7. Click the down arrow under **Mitigation Action** and note the reason for the alarm.
 `Even though we have whitelisted this bot we can still ensure that it is rate-limited to prevent stress on the application and any violations to that rate-limit will be Alarmed. This bot is currently violating the rate-limit of 5 TPS.`
+
 ![image](https://user-images.githubusercontent.com/38420010/119359356-d1c86c00-bca9-11eb-8033-94a3164e3879.png)
 
 ### Testing Additional User-Agents
@@ -247,6 +253,136 @@ The next logical step in our configuration is to deal with automated traffic. Wh
 **This completes Lab 2**
   
 **Congratulations! You have just completed Lab 2 by implementing a signature based bot profile. Implementing bot signatures is the bare minimum for bot mitigation and not a comprehensive security strategy. This is a excellent step in getting started with WAF and will provide actionable information on automated traffic. You can use this information to take next steps such as implementing challenges and blocking mode. At a very minimum, share this information with your Application teams. Automated traffic can negatively affect the bottom line especially in cloud environments where it’s pay to play. See our 241 class on Elevated WAF Security for more info on advanced bot mitigation techniques.**
+
+# Module 3: Threat Campaigns¶
+Expected time to complete: 20 minutes
+
+## Exercise 3.1: Threat Campaigns
+Threat Campaign signatures are subscription based and sourced from a variety of threat intel sources based on real world campaigns to attack and/or take over resources. Attackers are constantly looking for ways to exploit the latest vulnerabilities and/or new ways to exploit old vulnerabilities. F5’s Threat Research team is constantly monitoring malicious activity around the globe and creating signatures specific to these exploits. These Threat Campaign signatures are based on current “in-the-wild” attacks. Threat Campaign signatures contain contextual information about the nature and purpose of the attack.
+
+As an example, a normal WAF signature might tell you that SQL injection was attempted. A Threat Campaign signature will tell you that a known threat actor used a specific exploit of the latest Apache Struts vulnerability (CVE -xxxx) in an attempt to deploy ransomware for cryptomining software.
+
+### Objective
+  * Prep the Virtual Server
+  * Review TC Signatures
+  * Review Learning/Blocking settings and Staging Concept
+  * Launch Attack
+  * Test and verify logs
+  * Estimated time for completion: 20 minutes
+
+### Prep the Virtual Server
+These steps are necessary for this demonstration. In the “real world” having the Bot Defense Profile pick up this type of attack coming from a tool, not a browser, would be preferred, going back to the layered security approach.
+
+1. Navigate to **Local Traffic > Virtual Servers > Virtual Server List > insecureApp1_vs > Security > Policies**.
+2. Enable the **Application Security Policy: webgoat_waf**. Threat Campaign Signatures are part of your WAF policy.
+3. **Disable the Bot Defense Profile**. We are removing the bot profile since we will be using a “Bot” to test the Threat Campaign signatures.
+4. **Remove the Bot_Log profile** and click **Update**. Your virtual should look like this:
+
+![image](https://user-images.githubusercontent.com/38420010/119360891-5ebff500-bcab-11eb-9921-6a15bd53f2e9.png)
+
+### Review TC Signatures
+1. Navigate to **System > Software Management > Live Update > Threat Campaigns**. DO NOT update the system but note the Installation History. You can also view the Bot Signatures and other signature packages that are currently installed or pending.
+`Without an Advanced WAF license and Threat Campaign Subscription you will NOT get Live Updates for Bot Signatures.`
+2. Navigate to **Security > Options > Application Security > Threat Campaigns** and review some of the signatures and information about them.
+3. Click on the **Apache Struts2 Jakarta Multipart Parser BillGates** signature and note the attack type as well as the CVE reference: **CVE-2017-5638**. You can click the CVE reference link for more information.
+4. Click on the filter button and under the Reference field, type: **2020** and **Apply Filter** to search for all CVE’s related to 2020.
+![image](https://user-images.githubusercontent.com/38420010/119361128-9b8bec00-bcab-11eb-8deb-56a7bb4d9672.png)
+
+### Review TC Learning and Blocking Settings
+1. Navigate to **Security > Application Security > Policy Building > Learning and Blocking Settings** and expand the **Threat Campaigns** section.
+2. Note that the system is set to **Alarm** and **Block** on signature matches. Remember, our policy is in transparent mode so the blocking setting will not have any effect.
+![image](https://user-images.githubusercontent.com/38420010/119361221-b5c5ca00-bcab-11eb-96ba-d3be2be65fca.png)
+`Staging and the Enforcement Readiness period means that when new signatures are downloaded, if staging is enabled, the system will wait until the enforement readiness period is over before it starts blocking. You will still see alarms during this period. Due to the high accuracy nature of Threat Campaign signatures, the default system configuration is to have Staging turned off so new signatures go into effect immediately.`
+
+
+### Test TC Signatures and Review Logs
+`Please ensure the ipi_tester script is not running in the terminal on the Linux Client. If it is, you can strop it with Ctrl+C`
+1. From the Linux Client, confirm that the ipi_tester script is not running in the terminal and launch **Postman** from the Desktop. **It takes a few moments for Postman to launch**.
+![image](https://user-images.githubusercontent.com/38420010/119361378-e1e14b00-bcab-11eb-9766-16f63afb8f1b.png)
+2. You will see a collection called **Threat Campaigns** and within, an item called **test_req**. This simply tests that the site is responding.
+3. Click on **test_req** and then click the blue **Send** button on the top right. If your output does not look like this, please let a lab instructor know.
+![image](https://user-images.githubusercontent.com/38420010/119363569-3b4a7980-bcae-11eb-9a87-93defc9bb83e.png)
+4. Click on the **Fortinet SSL VPN** attack and then click the blue **Send** button. Repeat this process for the **Oracle2** attack. Explore the http headers and bodies being sent. If your policy was in blocking mode you would receive a block page but since the policy is transparent, these attacks are making it through and the juiceshop page is returned.
+5. Back in Advanced WAF, navigate to **Security > Event Logs > Application > Requests** and review the Sev5 events.
+![image](https://user-images.githubusercontent.com/38420010/119363772-7a78ca80-bcae-11eb-890c-83f3eb1c8f17.png)
+6. Click on the event for **/remotefgt_lang** and note the triggered violations. Click on **All Details** to the right of the screen to get more information. You can also click the **Open to new tab** icon in the top right to get an isolated view of this violation.
+![image](https://user-images.githubusercontent.com/38420010/119363841-8ebcc780-bcae-11eb-8f2d-fc593edba67f.png)
+7. When working in the WAF Requests event viewer, you can see exactly which Attack Signatures or Threat Campaigns were triggered under the **Violations** section. Click the **Numerical Value** under **Occurrences** for **Threat Campaign detected**.
+![image](https://user-images.githubusercontent.com/38420010/119363924-a7c57880-bcae-11eb-9227-3dca7d61103a.png)
+8. Notice that the there were actually 2 Threat Campaigns Signatures that triggered and you can see the Applied Blocking Setting of **Alarm**
+9. Click the little blue info icon next to one of the Threat Campaign Signatures for more information.
+![image](https://user-images.githubusercontent.com/38420010/119363967-b57afe00-bcae-11eb-8cc2-a589b7f81928.png)
+10. Review the other alert that we generated from Postman and explore any additional Attack Signatures that were fired. In this instance, a Malformed XML Data signature that was enabled as part of our Rapid Deployment Policy also picked up the attack.
+![image](https://user-images.githubusercontent.com/38420010/119364022-c461b080-bcae-11eb-9f6d-177b7995574f.png)
+11. Navigate to **Security > Event Logs > Application > Event Correlation** and explore the Dashboard.
+12. Click on the **Threat Campaign** incident and then click on **Export Incident** and review the generated report.
+
+![image](https://user-images.githubusercontent.com/38420010/119364311-0ab70f80-bcaf-11eb-98e5-d3f1d3382548.png)
+
+**This completes Lab 3**
+
+**Congratulations! You just completed Lab 3 and have continued your introductory knowledge to Advanced WAF with Threat Campaign Signatures. These powerful and highly-accurate signatures are a great first step into enforcing blocking as they produce virtually no false positives.**
+
+# Module 4: Transparent WAF Policy
+Expected time to complete: 30 minutes
+
+## Exercise 4.1: Transparent Policy
+### Objective
+We created a transparent policy way back in Lab 1 to configure Geolocation enforcement & Layer 7 XFF inspection for IPI. We then tested out the Threat Campaign signatures in Lab 3 and now we will explore and test some of the other components that should be in scope for enforcement early on in your WAF deployment.
+
+  * Review Learning & Blocking & Policy Building Process settings
+  * Implement HTTP Protocol Compliancy checks and test
+  * Test with a HTTP Protocol violation plus XSS attack
+  * Enable Server Technologies & Attack Signatures
+  * Review Reporting
+  * Estimated time for completion 30 minutes.
+
+### Learning & Blocking
+Recall from Lab 1, that we used the Rapid Deployment Policy template to create our policy and we deployed it in manual learning mode. This means as violations and/or false positives occur, the system will make suggestions to modify the policy. The admin will manually evaluate the suggestions and Approve, Ignore or Delete them.
+
+1. Navigate to **Security > Application Security > Policy Building > Traffic Learning** and notice that there are no “learning suggestions” displayed yet. So far, all of our site traffic has been generated by a malicious script so now it’s time to generate some real user traffic.
+
+2. In the Firefox browser open a new tab, click on the InsecureApp1 bookmark in the Bookmarks Toolbar. Click **Register new user**, create account and Browse around the site and perform several actions as a real user would.
+3. Click back on the Advanced WAF GUI tab in your browser and refresh the traffic learning screen. If you navigated away or closed the tab, open a new one, login to Advanced WAF and go to: **Security > Application Security > Policy Building > Traffic Learning**.
+4. You will see many Suggestions and a learning score that the system assigns based on how many times it has seen an occurence and from what source. You can **Accept, Delete, Ignore** or **Export** the suggestion.
+`This is where it usually starts to get a little dicey for a first-time WAF admin. Always look very carefully at the suggested action before deciding on which action to take. It is also helpful to define a whitelist so that the policy can learn quicker and from known trusted sources. You generally do not want the system learning from random and/or hostile Internet traffic and making suggestions to relax the policy.`
+5. Notice that most of the learning suggestions involve enabling various HTTP protocol Compliance Checks.
+6. Find and select the suggestion for **Enable HTTP protocol compliance check - HTTP Check: No Host header in HTTP/1.1 request**.
+7. Review the **Suggested Action** and click **Accept** and **Apply Policy**.
+![image](https://user-images.githubusercontent.com/38420010/119366527-5c609980-bcb1-11eb-905c-b6cc4af0f8c9.png)
+8. What just happened and how do you see what changed by who and when? Audit Log of course!
+9. Go to **Security > Application Security > Audit > Log** and review the most recent actions. You can see who, what and when every component within a policy was modified. (This step is not necessary but meant to draw your attention to the audit log)
+10. Click on the Element Name (blue hyperlink) **No Host header in HTTP/1.1** request This takes you to the Learning and Blocking Settings screen where the check was enabled.
+![image](https://user-images.githubusercontent.com/38420010/119367381-2e2f8980-bcb2-11eb-9e3e-7d4ed4d810f7.png)
+11 Notice that by default in the Rapid Deployment Policy, learning is enabled for most of the common HTTP Protocol compliancy checks. Also notice that the **Enable** checkbox next to **No Host header in HTTP/1.1** request is now checked.
+![image](https://user-images.githubusercontent.com/38420010/119367463-44d5e080-bcb2-11eb-9622-6311a4ecb57c.png)
+12. Uncheck the **Learn box** for this violation then **Save** and **Apply** policy.
+13. Open a new Terminal and send the following request. This request is being sent without a host header and should now raise a violation in our Event Log rather than a learning suggestion.
+```bash
+curl -k -H 'Host:' https://10.1.10.145/
+```
+14. Review the **Alarmed request in Security > Event Logs > Application > Requests**.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
