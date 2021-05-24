@@ -31,7 +31,7 @@ The network topology implemented for this lab is very simple. The following comp
 1 x F5 BIG-IP VE (v16.0.1) running Advanced WAF with IP Intelligence & Threat Campaign Subscription Services.  
 1 x Ubuntu Linux 20.04 server.  
 
-
+# Module 1: IP Intelligence
 ## Exercise 1.1: IP Intelligence Policies
 ### Objective
 
@@ -137,7 +137,7 @@ This policy is inspecting Layer 3 only and is a best-practice first step to secu
 1. Open a new terminal or terminal tab on the Client (the ipi_tester script should still be running) and run the following command to insert a malicious IP into the XFF Header:
 
 ```bash
-curl -H "X-Forwarded-For: 134.119.218.243" -k https://juiceshop.f5agility.com/xff-test
+curl -H "X-Forwarded-For: 134.119.218.243" -k https://10.1.10.145/xff-test
 ```
 If that IP has rotated out of the malicious DB, you can try one of these alternates:
 * 80.191.169.66 - Spam Source
@@ -149,6 +149,117 @@ If that IP has rotated out of the malicious DB, you can try one of these alterna
 * 134.119.219.93 - Spam Source
 * 218.17.228.102 - Spam Source
 * 220.169.127.172 - Scanner
+
+2. Navigate to **Security > Event Logs > Application > Requests** and review the entries. You should see a Sev3 Alert for the attempted access to uri: **/xff-test** from a malicious IP.
+![image](https://user-images.githubusercontent.com/38420010/119356456-bb6ce100-bca6-11eb-91e7-316e32571e48.png)
+
+3. In the violation details you can see the entire request details including the XFF Header even though this site was using strong TLS for encryption.
+
+`Attackers often use proxies to add in source IP randomness. Headers such as XFF are used to track the original source IP so the packets can be returned. In this example the HTTP request was sent from a malicious IP but through a proxy that was not known to be malicious. The request passed right through our Global Layer 3 IPI policy but was picked up at Layer 7 due to the WAF’s capabilities. This demonstrates the importance of implementing security in layers.`
+
+## Exercise 1.2: Add a Geolocation Policy
+Another practical control to implement early on in your WAF deployment is Geolocation blocking or fencing. If we know that our application is only supposed to be accessed from certain countries or not accessed from others, now is the time to get that configured and enforced.
+
+`Much like our Layer 7 IPI Policy, with Advanced WAF the Geolocation logic happens at the policy level. You may have many policies each with their own unique configuration per application or you may use a parent policy that has baseline settings.`
+
+### Geolocation
+**For demonstration purposes you will now disable the Layer 3 Global IPI policy to ensure Layer 7 Geolocation & IPI events occur.**
+1. Browse to **Security > Network Firewall > IP Intelligence > Policies** and set the Global Policy Assignment to **None** and click **Update**.
+2. Open **Security > Application Security > Geolocation Enforcement**
+3. Select all Geolocations **except the United States and N/A** and move them to Disallowed Geolocations. **Save** and then **Apply Policy**.
+![image](https://user-images.githubusercontent.com/38420010/119356800-1ef70e80-bca7-11eb-8486-093801f0641e.png)
+`N/A covers all RFC1918 private addresses. If you aren’t dropping them at your border router (layer 3), you may decide to geo-enforce at ASM (Layer 7) if no private IP’s will be accessing the site.`
+4. Navigate to **Security > Event Logs > Application > Requests** and review the entries in the event log that contain both IPI and Geolocation violations.
+![image](https://user-images.githubusercontent.com/38420010/119356892-3afab000-bca7-11eb-921e-0ff198b705b8.png)
+`You can also perform Geolocation Enforcement with LTM policies attached to Virtual Servers even if you are only licensed for Advanced WAF. Blocking decisions made here would not be reflected in the Application Requests WAF Log but can be still be logged.`
+
+
+**This completes Exercise 1.2
+
+Congratulations! You have just completed Lab 1 by implementing an IPI policy globally at Layer 3 and at Layer 7 via WAF policy for a specific application. Next you added Geolocation Enforcement to the policy and learned that this can be done via WAF policy or LTM policy. This follows our best-practice guidance for getting started with Application Security.**
+
+# Module 2: Bot Defense
+## Exercise 2.1: Bot Defense with Signatures¶
+
+The next logical step in our configuration is to deal with automated traffic. While Advanced WAF has some deep Bot Defense capabilities, we will start with Bot Signatures. A good goal during your initial deployment would be to get transparent BOT profiles deployed across your various application Virtual Servers so you can start to analyze your “normal” loads of automated traffic. This can be very surprising to an organization or a developer that thought they had a lot more “real users”.
+
+### Objective
+  * Create a Bot Defense logging profile
+  * Create and apply a transparent Bot Defense Profile with Signatures
+  * Test and verify logs
+  * Add a signature to the whitelist
+  * Estimated time for completion: **20 minutes**
+
+### Create Logging Profile
+1. Navigate to **Security > Event Logs > Logging Profiles** and click **Create** to a new Logging Profile with the settings shown in the screenshot below. Click **Create**.
+![image](https://user-images.githubusercontent.com/38420010/119357266-a775af00-bca7-11eb-9473-232baace0399.png)
+2. Navigate to **Security > Bot Defense > Bot Defense Profiles** and click **Create**.
+3. Name: **webgoat_bot**
+4. Profile Template: **Relaxed**
+5. Click the Learn more link to see an explanation of the options. These will be explored further in the 241 lab but for now we are going with **Relaxed** aka **Challenge-Free Verification**.
+![image](https://user-images.githubusercontent.com/38420010/119357409-d429c680-bca7-11eb-8889-27572035d2e2.png)
+6. Click on the **Bot Mitigation Settings** tab and review the default configuration.
+7. Click on the **Signature Enforcement** tab and review the signatures and staging status.
+8. Click **Save**.
+
+### Apply the Policy and Logging Profile
+1. Navigate to **Local Traffic > Virtual Servers** click on **insecureApp1_vs** then go to the **Security Tab > Policies** (top middle of screen).
+`To clearly demonstrate just the Bot Defense profile, please disable all security policy on the virtual server. The ipi_tester script should still be running!`
+2. Navigate to **Local Traffic > Virtual Servers > insecureApp1_vs > Security > Policies** and disable the **Application Security Policy** and **enable the Bot Defense Profile** and **Bot_Log Profile**.
+3. Click **Update**
+
+![image](https://user-images.githubusercontent.com/38420010/119358317-c759a280-bca8-11eb-9725-f60b6ddbe1c4.png)
+
+4. Navigate to **Security > Event Logs > Bot Defense > Bot Requests** and review the event logs. Notice curl (the bot being used in our ipi_tester script) is an untrusted bot in the HTTP Library category of Bots.
+
+![image](https://user-images.githubusercontent.com/38420010/119358572-0556c680-bca9-11eb-812f-248f097248fb.png)
+
+5. On the top middle of the screen under the **Bot Defense** Tab, click on **Bot Traffic** for a global view of all Bot Traffic. In this lab we only have one site configured.
+
+![image](https://user-images.githubusercontent.com/38420010/119358885-55ce2400-bca9-11eb-920e-8bfd37fee102.png)
+
+6. Click on the **insecurApp1_vs** Virtual Server and explore the analytics available under **View Detected Bots** at the bottom of the screen.
+
+![image](https://user-images.githubusercontent.com/38420010/119358826-4bac2580-bca9-11eb-903c-338599a74cf2.png)
+
+### Whitelisting a Bot & Demonstrating Rate-Limiting¶
+1. Navigate to **Security > Bot Defense > Bot Defense Profiles > juiceshop_bot > Bot Mitigation Settings**
+2. Under **Mitigation Settings** change Unknown Bots to **Rate Limit** with a setting of **5** TPS. **5** is a very aggressive rate-limit and used for demo purposes in this lab.
+`In the “real world” you will need to set this to a value that makes sense for your application or environment to ensure the logs do not become overwhelming. If you don’t know, it’s usually pretty safe to start with the default of 30.`
+3. Under **Mitigation Settings Exceptions** click **Add Exceptions** and search for curl and click **Add**.
+![image](https://user-images.githubusercontent.com/38420010/119359128-95950b80-bca9-11eb-9ece-4c4fd8cf5bfd.png)
+4. Change the Mitigation Setting to **None** and then **Save** the profile.
+![image](https://user-images.githubusercontent.com/38420010/119359150-9a59bf80-bca9-11eb-8434-04d89bd71af8.png)
+5. Navigate to **Security > Event Logs > Bot Defense > Bot Requests** and review the event logs.
+6. Notice the whitelisted bot’s class was changed to unknown and we set curl to not alarm but the requests are still being alarmed. What gives?
+![image](https://user-images.githubusercontent.com/38420010/119359260-ba897e80-bca9-11eb-9779-90a60e904923.png)
+7. Click the down arrow under **Mitigation Action** and note the reason for the alarm.
+`Even though we have whitelisted this bot we can still ensure that it is rate-limited to prevent stress on the application and any violations to that rate-limit will be Alarmed. This bot is currently violating the rate-limit of 5 TPS.`
+![image](https://user-images.githubusercontent.com/38420010/119359356-d1c86c00-bca9-11eb-8033-94a3164e3879.png)
+
+### Testing Additional User-Agents
+1. Navigate to **Local Traffic > Virtual Servers > Virtual Server List > security-testing-overlay-vs > Resources** tab and under **iRules** click **Manage** and add the **ua_tester** iRule and click **Finished**.
+![image](https://user-images.githubusercontent.com/38420010/119359583-12c08080-bcaa-11eb-963f-6c424263b000.png)
+`What you just added is an iRule that inserts poorly spoofed User-Agents. Our ipi_tester script has been sending traffic through this Virtual Server all along and spoofing source IP’s to the main site via the ipi_tester iRule.`
+2. Navigate to **Security > Event Logs > Bot Defense > Bot Requests** and review the event logs.
+3. All the **Unknown** bots are getting rate-limited and the known browsers that do not match the appropriate signatures, such as the spoofed Safari request in this example, are being marked as **Suspicious or Malicious**.
+
+**This completes Lab 2**
+  
+**Congratulations! You have just completed Lab 2 by implementing a signature based bot profile. Implementing bot signatures is the bare minimum for bot mitigation and not a comprehensive security strategy. This is a excellent step in getting started with WAF and will provide actionable information on automated traffic. You can use this information to take next steps such as implementing challenges and blocking mode. At a very minimum, share this information with your Application teams. Automated traffic can negatively affect the bottom line especially in cloud environments where it’s pay to play. See our 241 class on Elevated WAF Security for more info on advanced bot mitigation techniques.**
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
