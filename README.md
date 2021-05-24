@@ -370,8 +370,114 @@ curl -k -H 'Host:' https://10.1.10.145/
 ### False Positive Remediation
 1. Open terminal and paste following. It sumilates PUT method by user, which can be used by users in various applications.
 ```bash
-curl -X PUT -d hello=world -d foo=bar -k https://10.1.10.145
+curl -X PUT -d hello=world -d foo=bar -k https://10.1.10.145/illegalPut
 ```
+2. In Advanced WAF navigate to **Security > Event Logs > Application > Requests** and look for the Sev3 alert for the request going to **/illegalPut**.
+![image](https://user-images.githubusercontent.com/38420010/119368688-9df24400-bcb3-11eb-8b38-278fc5c51de9.png)
+3. Click **Accept** to allow a new method of **Put** in our policy and navigate to **Security > Application Security > Headers > Methods** and you will see our newly added “Allowed Method” of **Put**.
+![image](https://user-images.githubusercontent.com/38420010/119368784-b82c2200-bcb3-11eb-899b-10131b0fcd98.png)
+4. Send the request again
+5. Review the request in **Security > Event Logs > Application > Requests**.
+
+
+### Policy Building Process
+One thing you can do to greatly increase the integrity of the learning suggestions is, define trusted IP’s. You can also tell the system to Only learn from trusted IP’s which is a very wise thing to do if you are developing policy on an app that is exposed to untrusted or Internet traffic.
+
+1. Go to **Security > Application Security > Policy Building > Learning and Blocking Settings** and expand the **Policy Building Process** section at the bottom. Here you can see settings that this particular policy is using for learning. Notice that **Trusted IP Addresses List** is empty.
+2. Click the little window/arrow icon next to **Trusted IP Addresses** List is empty.
+3. This takes you to: **Security > Application Security > IP Addresses > IP Address Exceptions**. Click **Create**.
+4. For IP Address: **10.0.0.0** and for Netmask: **255.0.0.0**. Check the box for **Policy Builder trusted IP** and click **Create** and **Apply Policy**.
+![image](https://user-images.githubusercontent.com/38420010/119369870-f37b2080-bcb4-11eb-9ea0-2d0794b40455.png)
+5. Navigate back to **Security > Application Security > Policy Building > Learning and Blocking Settings** and expand the **Policy Building Process** section. Notice that our newly defined network is now a **Trusted IP**. This will greatly enhance the speed and quality of learning suggestions.
+6. Change the view from Basic to Advanced and review all the fine-grained configurations for the **Policy Building Process**.
+![image](https://user-images.githubusercontent.com/38420010/119369972-0beb3b00-bcb5-11eb-9cf4-c368a7172654.png)
+**You now know how to define a trusted ip and configure the policy building process settings**
+
+### Burp’ing the App
+In this section we are going to use the free/community version of an excellent DAST tool; Burp. Unfortunately, the free version does not actually allow DAST but it is still an excellent tool for packet crafting and that’s exactly how we are going to use it.
+
+### Accept the Remaining Learning Suggestions
+Go to **Security > Application Security > Policy Building > Traffic Learning** and select all of the remaining suggestions and click **Accept > Accept suggestions** and then **Apply Policy**.
+![image](https://user-images.githubusercontent.com/38420010/119370128-3ccb7000-bcb5-11eb-886a-9b2c805a0528.png)
+
+### HTTP Compliancy Check - Bad Host Header Value
+The **Bad Host Header Value** check is an HTTP Parser Attack and definitely something that should be implemented as part of **Good WAF Security**. It was included in the suggestions you just accepted.
+
+**Risk**: If we allow bad host header values they can be used to Fuzz web servers and gather system information. Successful exploitation of this attack could allow for the execution of XSS arbitrary code.
+
+1. Launch **Burp** from the Desktop. **Do Not click multiple times. It takes a few moments to load**.
+![image](https://user-images.githubusercontent.com/38420010/119370368-7b612a80-bcb5-11eb-9e0a-9578472456e4.png)
+2. **DO NOT update.**
+3. Choose **Temporary Project** and click **Next** and then click **Start Burp**.
+4. Click the **Repeater** tab and paste in the following http request (Replace the username and password with credentials you have created.) and click **Send**.
+5. A popup window will appear to configure the target details. For host use: **10.1.10.145**. For port use: **443**. **Check the Use HTTPS box**.
+6. Click **Send**
+**XSS in HOST Header**  
+
+```
+POST https://10.1.10.145/WebGoat/login HTTP/1.1
+User-Agent: BabyYoda
+Pragma: no-cache
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 38
+Host: <script>alert(document.cookie);</script>
+
+username=f5student&password=[password]
+```
+
+![image](https://user-images.githubusercontent.com/38420010/119371000-3ee1fe80-bcb6-11eb-9028-904c31ef3a4f.png)
+7. Back in Advanced WAF, browse to **Security > Event Logs > Application > Requests** and review the alert for this Sev5 attack. Note the alert severity is much higher (5) for this attack type due to several violations occuring including HTTP protocol Violations and several XSS signatures.
+8. Review all the details and then click the 3 under the **Attack Signature Detected** violation to see all of the staged XSS Attack Signatures that were triggered.
+![image](https://user-images.githubusercontent.com/38420010/119371172-6fc23380-bcb6-11eb-8c36-29d482684897.png)
+
+### Server Technologies & Attack Signatures
+In this final exercise we will examine server technologies which allow you to automatically discover server-side frameworks, web servers and operating systems. This feature helps when the backend technologies are not well known or communicated from the Dev team.
+
+1. Go to **Security > Application Security > Policy Building > Learning and Blocking Settings > Attack Signatures**
+2. Review the Attack Signatures that were applied during policy creation from back in Lab 1. **Generic Detection Signatures (High/Medium Accuracy)**. Notice that they are set to **Learn/Alarm/Block** and **Staging** is enabled.
+3. Locate Server Technologies and expand the option. Click **Enable Server Technology Detection**, click **Save** and then click the **New Window Icon** next to Server Technologies.
+![image](https://user-images.githubusercontent.com/38420010/119371333-997b5a80-bcb6-11eb-9072-b1a7a38b73e5.png)
+4. Scroll down to Advanced Settings > Server Technologies and click in the box. Search for Linux since we know the server is running Linux. The system will display a box describing which new signature sets will be applied. Click Confirm.
+5. Make sure to **Save** and **Apply Policy**.
+6. Go to **Security > Application Security > Policy Building > Learning and Blocking Settings > Attack Signatures** and notice the new Unix/Linux Server Technology signature sets that were added to the policy.
+
+![image](https://user-images.githubusercontent.com/38420010/119371527-d21b3400-bcb6-11eb-8cc0-b09e24f21c99.png)
+
+### Framework Attacks
+
+1. Back in BURP navigate to the repeater tab and adjust the payload to the following and hit Send. Replace password with the password you’ve been using all along
+
+**Framework Attack**
+```
+POST https://10.1.10.145/WebGoat/login HTTP/1.1
+User-Agent: ImperialProbeDroid
+Pragma: no-cache
+Cache-Control: no-cache
+Content-Type: /etc/init.d/iptables stop; service iptables stop; SuSEfirewall2 stop; reSuSEfirewall2 stop; cd /tmp; wget -c https://10.1.10.145:443/7; chmod 777 7; ./7;
+Content-Length: 38
+Host: DarthMaul
+
+username=f5student&password=[password]
+```
+
+2. Browse to **Security > Event Logs > Application > Requests** and look for the most recent Sev5 Event. Select the event, review the violations and click the 2 under Occurrences for the Attack signature detected violation.
+
+3. Click the little blue i and review the Attack Signature Details. We can see that this was a Systems based Unix/Linux Signature in staging mode.
+![image](https://user-images.githubusercontent.com/38420010/119372077-3fc76000-bcb7-11eb-8838-a2d9f448fb81.png)
+
+4. We are now alerting on attacks aimed at Server Technologies.
+
+**This completes Lab 4**
+
+**Congratulations! It was a long road but you made it though and now have the knowledge to go forth and start testing. Given the Advanced WAF is a proxy, you could build a Virtual Edition F5 locally on your machine and implement a number of test scenarios with no impacts to a production application. Contact your friendly neighborhood F5 Solutions Engineer for more information!! Hope to see you in the 241 Elevated WAF Protection class! Cheers!!!**
+
+
+
+
+
+
+
 
 
 
