@@ -32,4 +32,30 @@ The network topology implemented for this lab is very simple. The following comp
 1 x Ubuntu Linux 20.04 server.  
 
 
+## Exercise 1.1: IP Intelligence Policies
+### Objective
 
+  * Configure Global IPI Profile & Logging
+  * Review Global IPI Logs
+  * Configure Custom Category and add an IP
+  * Create your first WAF Policy and implement IPI w/ XFF inspection
+  * Estimated time for completion: 30 minutes.
+
+### Create Your 1st L3 IPI Policy
+An IPI policy can be created and applied globally, at the virtual server (VS) level or within the WAF policy itself. We will follow security best-practice by applying IPI via a Global Policy to secure Layer 3 device-wide and within the Layer 7 WAF policy to protect the App by inspecting the HTTP X-Forwarded-For Header.  
+![image](https://user-images.githubusercontent.com/38420010/119348500-3e893980-bc9d-11eb-8836-e57471dc73a8.png)
+
+In this first lab, we will start by enabling a Global IPI Policy; much like you would do, as a day 1 task for your WAF:  
+  
+1. RDP to the Linux Client by choosing the RDP access method from your UDF environment page. You will be presented with the following prompt where you will enter the password only. Please use f5student username:
+
+![image](https://user-images.githubusercontent.com/38420010/119348695-83ad6b80-bc9d-11eb-84a6-ad49b8747f0c.png)
+
+2. Once logged in, launch Chrome Browser. You can double-click the icon or right click and choose execute but do not click multiple times. It does take a few moments for the browser to launch the first time.
+3. Click the bigip01 bookmark and login to TMUI. It is normal to see a certificate warning that you can safely click through. Or you can use TMUI access via UDF.
+4. On the Main tab, click Local Traffic > Virtual Servers and you will see the Virtual Servers that have been pre-configured for your lab. Essentially, these are the listening IP’s that receive requests for your application and proxy the requests to the backend “real” servers.
+
+![image](https://user-images.githubusercontent.com/38420010/119349079-020a0d80-bc9e-11eb-91ed-d77da464c136.png)
+
+  * **insecureApp1_vs** - Main Site - Status of green indicates a healthy backend pool of real servers
+  * **security-testing-overlay-vs** - Will be used later to send spoofed traffic to the main site
